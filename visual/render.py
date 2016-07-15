@@ -122,7 +122,9 @@ class RenderPyGame(object):
 
     def render(self):
         pygame.init()
-        sensor_data = FakePlotData()
+        # sensor_data = FakePlotData()
+
+        dat_object = ProxyPlotData(self.object_com_port)
 
         video_flags = pygame.OPENGL | pygame.DOUBLEBUF
         screen = pygame.display.set_mode(
@@ -143,8 +145,8 @@ class RenderPyGame(object):
             if event.type == KEYDOWN and event.key == K_z:
                 self.rotate_around_y_mode = not self.rotate_around_y_mode
 
-            # sensor_data = ProxyPlotData(self.object_com_port).run()
-            sensor_data.set_received_data()
+            sensor_data = dat_object.run()
+            # sensor_data.set_received_data()
 
             self.figure.draw(sensor_data, self.rotate_around_y_mode)
 

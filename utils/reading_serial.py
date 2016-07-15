@@ -88,6 +88,8 @@ class PlotData(object):
 
     time_stamp = 0
 
+    i = 0
+
     def __init__(self):
         self.xl_x_value = 0
         self.xl_y_value = 0
@@ -101,17 +103,20 @@ class PlotData(object):
 
         self.time_stamp = 0
 
+        self.i = 0
+
     def set_received_data(self, package):
+
         result = package
         ay = numpy.arctan2(
-            float(result[1]), math.sqrt(
-                math.pow(float(result[0]), 2) + math.pow(float(result[2]), 2)
+            float(result[0]), math.sqrt(
+                math.pow(float(result[1]), 2) + math.pow(float(result[2]), 2)
             )
         ) * 180 / math.pi
 
         ax = numpy.arctan2(
-            float(result[0]), math.sqrt(
-                math.pow(float(result[1]), 2) + math.pow(float(result[2]), 2)
+            float(result[1]), math.sqrt(
+                math.pow(float(result[0]), 2) + math.pow(float(result[2]), 2)
             )
         ) * 180 / math.pi
 
@@ -121,13 +126,13 @@ class PlotData(object):
             )
         ) * 180 / math.pi
 
-        data_x = float(result[3]) * 0.96 + ax * 0.04
-        data_y = float(result[4]) * 0.96 + ay * 0.04
-        data_z = float(result[5]) * 0.96 + az * 0.04
+        data_x = float(result[3])
+        data_y = float(result[4])
+        data_z = float(0)
 
-        self.xl_x_value = float(ax)
-        self.xl_y_value = float(ay)
-        self.xl_z_value = float(az)
+        self.xl_x_value = data_x
+        self.xl_y_value = data_y
+        self.xl_z_value = data_z
         self.gyro_x_value = float(result[3])
         self.gyro_y_value = float(result[4])
         self.gyro_z_value = float(result[5])
@@ -138,11 +143,12 @@ class PlotData(object):
 class ProxyPlotData(object):
     def __init__(self, read_port):
         self.read_port = read_port
+        self.validation = PlotData()
 
     def run(self):
-        validation = PlotData()
-        validation.set_received_data(self.read_port.read_arduino_data())
-        return validation
+
+        self.validation.set_received_data(self.read_port.read_arduino_data())
+        return self.validation
 
 
 class FakePlotData(PlotData):
