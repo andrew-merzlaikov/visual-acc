@@ -1,4 +1,9 @@
+import csv
+from datetime import datetime
+from msvcrt import getch
 import math
+from sys import stdout
+
 import numpy
 from serial import Serial, EIGHTBITS, PARITY_NONE, STOPBITS_ONE
 import settings
@@ -6,7 +11,10 @@ import settings
 
 class ReadComPort(object):
 
-    def __init__(self):
+    RESULT_FILE = "result"
+    CALIBRATION_FILE = "calibration"
+
+    def __init__(self, type_file=None):
         self.com_port = Serial(
             settings.PORT,
             settings.BAUDRATE,
@@ -14,6 +22,24 @@ class ReadComPort(object):
             parity=PARITY_NONE,
             stopbits=STOPBITS_ONE
         )
+
+        self.type_file = type_file
+        if not type_file:
+            self.type_file = ReadComPort.RESULT_FILE
+
+        self.path_file = self.__get_file_path(self.type_file)
+        self.file_csv = open(self.path_file, 'wb')
+
+        field_names = SensorData.data
+        self.data_sensor = SensorData()
+        if self.type_file == ReadComPort.CALIBRATION_FILE:
+            field_names = CalibrationSensorData.calibration_data
+            self.calibration_sensor_data = CalibrationSensorData()
+
+        self.writer = csv.DictWriter(
+            self.file_csv, fieldnames=field_names, delimiter=';'
+        )
+        self.writer.writeheader()
 
     def _read_data(self):
         self.com_port.read_until()
@@ -34,10 +60,10 @@ class ReadComPort(object):
 
     @staticmethod
     def validate_package(package):
-        if len(package) != 8:
+        if len(package) != 9:
             return False
         for data in package:
-            if not data:
+            if not data or float(data) == 0.0:
                 return False
         return True
 
@@ -45,14 +71,43 @@ class ReadComPort(object):
         for i in range(0, 1000):
             package = self.read_arduino_data()
             print(i)
-            tt = PlotData()
+            tt = SensorData()
             tt.set_received_data(package)
+
+    @staticmethod
+    def __get_file_path(type_file):
+        key_file_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        path_file = (
+            settings.RESULT_DIR + "{type_file}{key}.csv".format(
+                type_file=type_file, key=key_file_name
+            )
+        )
+        return path_file
+
+    def save_data_to_csv(self, count_space=0):
+        self.data_sensor.set_received_data(self.read_arduino_data(), count_space)
+        if self.type_file == ReadComPort.CALIBRATION_FILE:
+            self.writer.writerow(self.data_sensor.get_dict_calibration_data())
+        else:
+            self.writer.writerow(self.data_sensor.get_dict_data())
+        return self.data_sensor
+
+    def calibration(self):
+        for iteration in range(1, 1000):
+            self.calibration_sensor_data.get_iteration_data(
+                self.read_arduino_data()
+            )
+            stdout.write("\r%d/1000" % iteration)
+            stdout.flush()
+        stdout.write("\r           \r")
+        return self.calibration_sensor_data
 
     def close(self):
         self.com_port.close()
+        self.file_csv.close()
 
 
-class PlotData(object):
+class SensorData(object):
 
     association = {
         "xl_x_line": "xl_x_value",
@@ -62,7 +117,6 @@ class PlotData(object):
         "gyro_y_line": "gyro_y_value",
         "gyro_z_line": "gyro_z_value",
         "altitude_line": "altitude_value",
-
     }
 
     data = [
@@ -72,8 +126,10 @@ class PlotData(object):
         "gyro_x_value",
         "gyro_y_value",
         "gyro_z_value",
+        "altitude_value_z",
         "altitude_value",
         "time_stamp",
+        "count_space",
     ]
 
     xl_x_value = 0
@@ -87,6 +143,14 @@ class PlotData(object):
     altitude_value = 0
 
     time_stamp = 0
+    time_delta = 0
+    altitude_value_z = 0
+    altitude_value_z_dot = 0
+    count_space = 0
+
+    SCALE_USEC = 0.1 ** 6
+    ACC_GRAVITY = 0.97
+    SCALE_ACC = 0.1 ** 6
 
     i = 0
 
@@ -102,58 +166,138 @@ class PlotData(object):
         self.altitude_value = 0
 
         self.time_stamp = 0
+        self.time_delta = 0
+        self.altitude_value_z = 0
+        self.altitude_value_z_dot = 0
+        self.count_space = 0
 
         self.i = 0
 
-    def set_received_data(self, package):
+    def set_received_data(self, package, count_space=0):
 
         result = package
-        ay = numpy.arctan2(
-            float(result[0]), math.sqrt(
-                math.pow(float(result[1]), 2) + math.pow(float(result[2]), 2)
-            )
-        ) * 180 / math.pi
+        # ay = numpy.arctan2(
+        #     float(result[0]), math.sqrt(
+        #         math.pow(float(result[1]), 2) + math.pow(float(result[2]), 2)
+        #     )
+        # ) * 180 / math.pi
+        #
+        # ax = numpy.arctan2(
+        #     float(result[1]), math.sqrt(
+        #         math.pow(float(result[0]), 2) + math.pow(float(result[2]), 2)
+        #     )
+        # ) * 180 / math.pi
+        #
+        # az = numpy.arctan2(
+        #     float(result[2]), math.sqrt(
+        #         math.pow(float(result[0]) , 2) + math.pow(float(result[1]), 2)
+        #     )
+        # ) * 180 / math.pi
 
-        ax = numpy.arctan2(
-            float(result[1]), math.sqrt(
-                math.pow(float(result[0]), 2) + math.pow(float(result[2]), 2)
-            )
-        ) * 180 / math.pi
+        self.time_delta = SensorData.SCALE_USEC * float(result[8])
 
-        az = numpy.arctan2(
-            float(result[2]), math.sqrt(
-                math.pow(float(result[0]), 2) + math.pow(float(result[1]), 2)
-            )
-        ) * 180 / math.pi
+        self.altitude_value_z += (
+            self.altitude_value_z_dot * self.time_delta +
+            0.25 * (self.xl_z_value + SensorData.SCALE_ACC * float(result[2])) *
+            self.time_delta ** 2
+        )
+        self.altitude_value_z_dot += (
+            0.5 * (self.xl_z_value + SensorData.SCALE_ACC * float(result[2])) *
+            self.time_delta
+        )
 
-        data_x = float(result[3])
-        data_y = float(result[4])
-        data_z = float(0)
-
-        self.xl_x_value = data_x
-        self.xl_y_value = data_y
-        self.xl_z_value = data_z
-        self.gyro_x_value = float(result[3])
-        self.gyro_y_value = float(result[4])
-        self.gyro_z_value = float(result[5])
+        self.xl_x_value = SensorData.SCALE_ACC * float(result[0])
+        self.xl_y_value = SensorData.SCALE_ACC * float(result[1])
+        self.xl_z_value = (
+            SensorData.SCALE_ACC * float(result[2]) - SensorData.ACC_GRAVITY
+        )
+        self.gyro_x_value = SensorData.SCALE_ACC * float(result[3])
+        self.gyro_y_value = SensorData.SCALE_ACC * float(result[4])
+        self.gyro_z_value = SensorData.SCALE_ACC * float(result[5])
         self.altitude_value = float(result[6])
         self.time_stamp = int(result[7])
+        self.count_space = count_space
+
+    def get_dict_data(self):
+        result = {}
+        for key in self.data:
+            if hasattr(self, key):
+                result[key] = getattr(self, key)
+        return result
 
 
-class ProxyPlotData(object):
+class CalibrationSensorData(SensorData):
+    matrix_calibration = list()
+
+    calibration_data = [
+        "xl_x_value",
+        "xl_y_value",
+        "xl_z_value",
+    ]
+    
+    def __init__(self):
+        self.mean_dict = {
+            "xl_x_value": 0,
+            "xl_y_value": 0,
+            "xl_z_value": 0,
+        }
+        self.iteration = 0
+        self.matrix_calibration = list()
+        super(CalibrationSensorData, self).__init__()
+        
+    def get_iteration_data(self, packages):
+        self.mean_dict = {
+            "xl_x_value": 0,
+            "xl_y_value": 0,
+            "xl_z_value": 0,
+        }
+        self.iteration = 0
+        self.set_received_data(packages)
+        for key in self.calibration_data:
+            self.mean_dict[key] += getattr(self, key)
+            self.iteration += 1
+    
+    def run_mean_and_push(self):
+        for key in self.calibration_data:
+            self.mean_dict[key] /= self.iteration
+        self.matrix_calibration.append(
+            [
+                self.mean_dict["xl_x_value"],
+                self.mean_dict["xl_y_value"],
+                self.mean_dict["xl_z_value"]
+            ]
+        )
+            
+    def get_dict_calibration_data(self):
+        return self.mean_dict
+
+
+class ProxySensorData(object):
     def __init__(self, read_port):
         self.read_port = read_port
-        self.validation = PlotData()
 
-    def run(self):
-
-        self.validation.set_received_data(self.read_port.read_arduino_data())
-        return self.validation
+    def run(self, count_space=0):
+        return self.read_port.save_data_to_csv(count_space)
 
 
-class FakePlotData(PlotData):
+class FakeSensorData(SensorData):
 
     def set_received_data(self):
         self.xl_x_value = 0
         self.xl_y_value = 0
         self.xl_z_value = 0
+
+
+# class ProxyCalibrationData(object):
+#     def __init__(self, read_port):
+#         self.read_port = read_port
+#
+#     def run(self):
+#
+#         while True:
+#             key = ord(getch())
+#             if key == 27:  # ESC
+#                 break
+#             elif key == 32:  # Slash
+#                 self.read_port.save_data_to_csv()
+#             elif key == 13:  # Space

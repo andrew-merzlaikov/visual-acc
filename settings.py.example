@@ -1,6 +1,10 @@
-PORT = ""
+import os
+
+PORT = "COM5"
 BAUDRATE = 115200
-
-
 WIGHT = 680
 HEIGHT = 480
+
+
+PROJECT_PATH = os.path.dirname(__file__)
+RESULT_DIR = PROJECT_PATH + "/result/"

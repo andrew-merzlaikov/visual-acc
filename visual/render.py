@@ -4,7 +4,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import pygame
 from pygame.locals import *
-from utils.reading_serial import ProxyPlotData, FakePlotData
+from utils.reading_serial import ProxySensorData, FakeSensorData
 
 import settings
 
@@ -98,11 +98,13 @@ class RenderPyGame(object):
 
     rotate_around_y_mode = 0
     object_com_port = None
+    count_space = 0
 
     def __init__(self, object_com_port):
         self.rotate_around_y_mode = True
         self.object_com_port = object_com_port
         self.figure = OpenGlObject()
+        self.count_space = 0
 
     def _resize(self, width, height):
         if height == 0:
@@ -120,11 +122,11 @@ class RenderPyGame(object):
         glDepthFunc(GL_LEQUAL)
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 
-    def render(self):
+    def run(self):
         pygame.init()
-        # sensor_data = FakePlotData()
+        # sensor_data = FakeSensorData()
 
-        dat_object = ProxyPlotData(self.object_com_port)
+        dat_object = ProxySensorData(self.object_com_port)
 
         video_flags = pygame.OPENGL | pygame.DOUBLEBUF
         screen = pygame.display.set_mode(
@@ -136,17 +138,21 @@ class RenderPyGame(object):
         frames = 0
         ticks = pygame.time.get_ticks()
 
-        while 1:
+        while True:
             event = pygame.event.poll()
             if event.type == QUIT or (
                 event.type == KEYDOWN and event.key == K_ESCAPE
             ):
                 break
-            if event.type == KEYDOWN and event.key == K_z:
-                self.rotate_around_y_mode = not self.rotate_around_y_mode
+            # if event.type == KEYDOWN and event.key == K_z:
+            #     self.rotate_around_y_mode = not self.rotate_around_y_mode
+            if event.type == KEYDOWN and event.key == K_SPACE:
+                self.count_space += 1
+                print "{star} {count_space} {star}".format(
+                    star="*" * 10, count_space=self.count_space
+                )
 
-            sensor_data = dat_object.run()
-            # sensor_data.set_received_data()
+            sensor_data = dat_object.run(self.count_space)
 
             self.figure.draw(sensor_data, self.rotate_around_y_mode)
 
