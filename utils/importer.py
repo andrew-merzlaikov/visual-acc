@@ -20,7 +20,7 @@ class ImporterCSV(object):
 
     @staticmethod
     def __get_file_path(file_name):
-        key_file_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        key_file_name = datetime.now().strftime("%m-%d_%H-%M-%S")
         path_file = (
             settings.RESULT_DIR + "{type_file}{key}.csv".format(
                 type_file=file_name, key=key_file_name

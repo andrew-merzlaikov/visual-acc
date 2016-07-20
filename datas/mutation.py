@@ -1,5 +1,7 @@
 # coding: utf-8
 import settings
+import numpy
+import math
 
 
 class BaseEncoder(object):
@@ -72,6 +74,30 @@ class MutationGravityData(BaseMathMutation):
                 getattr(data, cls.attr) * settings.GRAVITY
             )
             setattr(data, cls.attr, value)
+
+
+class MutationAxeGenerateData(BaseMathMutation):
+    u""" Вычесляем углы поворота """
+    @classmethod
+    def mutation(cls, data):
+
+        setattr(data, "xl_x_value", numpy.arctan2(
+            data.xl_x_value, math.sqrt(
+                math.pow(data.xl_y_value, 2)+math.pow(data.xl_z_value, 2)
+            )
+        ) * 180 / math.pi)
+
+        setattr(data, "xl_y_value", numpy.arctan2(
+            data.xl_y_value, math.sqrt(
+                math.pow(data.xl_x_value, 2)+math.pow(data.xl_z_value, 2)
+            )
+        ) * 180 / math.pi)
+
+        setattr(data, "xl_z_value", numpy.arctan2(
+            data.xl_z_value, math.sqrt(
+                 math.pow(data.xl_x_value, 2)+math.pow(data.xl_y_value, 2)
+            )
+        ) * 180 / math.pi)
 
 
 class MutationCalibrationData(object):

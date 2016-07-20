@@ -1,5 +1,6 @@
 # coding: utf-8
-from datas.mutation import MutationScaleData, MutationGravityData
+from datas.mutation import MutationScaleData, MutationGravityData, \
+    MutationAxeGenerateData
 
 
 class DataException(Exception):
@@ -58,7 +59,11 @@ class VisualisationData(BaseData):
         "altitude_value",
         "time_stamp",
     ]
-    math_mutation = [MutationScaleData, MutationGravityData]
+    math_mutation = [
+        MutationScaleData,
+        # MutationGravityData,
+        MutationAxeGenerateData
+    ]
 
 
 class CalibrationData(BaseData):

@@ -91,4 +91,5 @@ class ArduinoSerialPortString(BaseSerialPort):
     decoder = ArduinoDecoderStringData
 
     def read_data(self):
-        return self.com_port.read_until()
+        result = self.com_port.read_until()
+        return result
