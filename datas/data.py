@@ -88,6 +88,12 @@ class CalibrationData(BaseData):
     def __init__(self):
         u""" Конструктор для работы калибровки """
 
+        self._reset_mean_dict()
+
+        super(CalibrationData, self).__init__()
+
+    def _reset_mean_dict(self):
+        u""" Обнуляем данные необходимые для вычесления среднего """
         # mean - временный вектор который необходим для усреднения
         self.mean = dict()
         for key in self.name_attributes:
@@ -96,7 +102,14 @@ class CalibrationData(BaseData):
         # iteration - количество итераций для поиска среднего значения
         self.iteration = 0
 
-        super(CalibrationData, self).__init__()
+    def run_iteration(self, packages):
+        u""" Запускаем итерацию"""
+        self._reset_mean_dict()
+
+        self.set_received_data(packages)
+        for key in self.name_attributes:
+            self.mean[key] += getattr(self, key)
+            self.iteration += 1
 
     def math_mean_and_append_matrix(self):
         u""" Вычесляем среднее и добавляем в матрицу калибровки"""

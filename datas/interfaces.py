@@ -6,6 +6,7 @@ import pygame
 
 import settings
 
+# TODO: Нужно переделать архитектуру интерфейсов тут насрано
 
 class OpenGlObject(object):
 
@@ -26,25 +27,33 @@ class OpenGlObject(object):
             GL_UNSIGNED_BYTE, text_data
         )
 
-    def draw(self, sensor_data, rotate_around_y_mode):
+    def draw(self, sensor_data, rotate_around_y_mode,
+             text=None, osd_status=None):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
         glTranslatef(0, 0.0, -7.0)
 
-        osd_text = "Y: " + str(
-            "{0:.2f}".format(sensor_data.xl_y_value)
-        ) + ", X: " + str(
-            "{0:.2f}".format(sensor_data.xl_x_value)
-        )
-
-        if rotate_around_y_mode:
-            osd_line = osd_text + ", Z: " + str(
-                "{0:.2f}".format(sensor_data.xl_z_value)
+        if not text:
+            osd_text = "Y: " + str(
+                "{0:.2f}".format(sensor_data.xl_y_value)
+            ) + ", X: " + str(
+                "{0:.2f}".format(sensor_data.xl_x_value)
             )
+            if rotate_around_y_mode:
+                osd_line = osd_text + ", Z: " + str(
+                    "{0:.2f}".format(sensor_data.xl_z_value)
+                )
+            else:
+                osd_line = osd_text
         else:
-            osd_line = osd_text
+            osd_line = text
 
         self._draw_text((-2, -2, 2), osd_line)
+
+        if osd_status:
+            self._draw_text((-3, -3, 2), osd_status)
+        else:
+            self._draw_text((-3, -3, 2), "                       ")
 
         if rotate_around_y_mode:
             glRotatef(sensor_data.xl_z_value, 0.0, 1.0, 0.0)

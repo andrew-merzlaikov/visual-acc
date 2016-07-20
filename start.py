@@ -1,25 +1,25 @@
 # coding: utf-8
 import argparse
-from datas.actions import VisualisationAction
+from datas.actions import VisualisationAction, CalibrationAction
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument('-t', action='store', dest='type_program',
-#                     help='Calibration | PyGame | Test')
-#
-# # parser.add_argument('-t', action='store_true', default=False,
-# #                     dest='boolean_switch',
-# #                     help='Set a switch to true')
-# # parser.add_argument('-f', action='store_false', default=False,
-# #                     dest='boolean_switch',
-# #                     help='Set a switch to false')
-#
-# parser.add_argument('--version', action='version', version='%(prog)s 1.0')
-#
-# results = parser.parse_args()
-# print 'type_program =', results.type_program
+parser = argparse.ArgumentParser()
+parser.add_argument('-t', action='store', dest='type_program',
+                    help='Calibration | PyGame | Test')
 
-action = VisualisationAction()
-action.run()
+parser.add_argument('--version', action='version', version='%(prog)s 1.2')
+
+results = parser.parse_args()
+print 'type_program =', results.type_program
+
+if results.type_program == "PyGame":
+    action = VisualisationAction()
+    action.run()
+
+
+if results.type_program == "Calibration":
+    action = CalibrationAction()
+    action.run()
+
 
 # try:
 #     if results.type_program == "Calibration":
