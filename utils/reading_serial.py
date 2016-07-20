@@ -42,9 +42,7 @@ class ReadComPort(object):
         self.writer.writeheader()
 
     def _read_data(self):
-        self.com_port.read_until()
         package = self.com_port.read_until()
-        # print(package)
         return package.decode().strip().split(";")
 
     def read_arduino_data(self, level=0):
@@ -105,6 +103,46 @@ class ReadComPort(object):
     def close(self):
         self.com_port.close()
         self.file_csv.close()
+
+
+class TestReadComPort(ReadComPort):
+
+    START = 's'
+    PACKAGE_LEN = 36
+
+    def _read_data(self):
+        self.com_port.reset_output_buffer()
+        self.com_port.write(TestReadComPort.START)
+        self.com_port.reset_input_buffer()
+        package = self.com_port.read(TestReadComPort.PACKAGE_LEN)
+        return package
+
+    def read_arduino_data(self, level=0):
+        if level > 100:
+            return list()
+        data = self._read_data()
+        if self.validate_package(data):
+            return data
+        return self.read_arduino_data(level + 1)
+
+    def get_array_for_test(self):
+        for i in range(0, 1000):
+            package = self.read_arduino_data()
+            print(i)
+            tt = SensorData()
+            tt.set_received_data(package)
+
+    @staticmethod
+    def validate_package(package):
+        if len(package) != 36:
+            return False
+        return True
+
+    @staticmethod
+    def parse_package(package):
+        if len(package) != 36:
+            return False
+        return True
 
 
 class SensorData(object):
@@ -287,17 +325,3 @@ class FakeSensorData(SensorData):
         self.xl_y_value = 0
         self.xl_z_value = 0
 
-
-# class ProxyCalibrationData(object):
-#     def __init__(self, read_port):
-#         self.read_port = read_port
-#
-#     def run(self):
-#
-#         while True:
-#             key = ord(getch())
-#             if key == 27:  # ESC
-#                 break
-#             elif key == 32:  # Slash
-#                 self.read_port.save_data_to_csv()
-#             elif key == 13:  # Space

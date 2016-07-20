@@ -3,13 +3,13 @@ import argparse
 from serial import SerialException
 
 from utils.calibration import ProxyCalibrationData
-from utils.reading_serial import ReadComPort
+from utils.reading_serial import ReadComPort, TestReadComPort
 from visual.render import RenderPyGame
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-t', action='store', dest='type_program',
-                    help='Calibration | PyGame ')
+                    help='Calibration | PyGame | Test')
 
 # parser.add_argument('-t', action='store_true', default=False,
 #                     dest='boolean_switch',
@@ -21,12 +21,14 @@ parser.add_argument('-t', action='store', dest='type_program',
 parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
 results = parser.parse_args()
-print 'type_program     =', results.type_program
+print 'type_program =', results.type_program
 
 try:
     if results.type_program == "Calibration":
         read_port = ReadComPort(type_file=ReadComPort.CALIBRATION_FILE)
         obj = ProxyCalibrationData(read_port)
+    elif results.type_program == "Test":
+        read_port = TestReadComPort()
     else:
         read_port = ReadComPort()
 except SerialException:
@@ -34,10 +36,12 @@ except SerialException:
 else:
     if results.type_program == "PyGame":
         obj = RenderPyGame(read_port)
-
-    try:
-        obj.run()
-    except Exception as error:
-        print error
-    finally:
-        read_port.close()
+    if results.type_program == "Test":
+        read_port.get_array_for_test()
+    else:
+        try:
+            obj.run()
+        except Exception as error:
+            print error
+        finally:
+            read_port.close()
