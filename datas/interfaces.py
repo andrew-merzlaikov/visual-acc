@@ -3,11 +3,10 @@
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import pygame
-from pygame.locals import *
-from utils.reading_serial import ProxyPlotData, FakePlotData
 
 import settings
 
+# TODO: Нужно переделать архитектуру интерфейсов тут насрано
 
 class OpenGlObject(object):
 
@@ -28,25 +27,33 @@ class OpenGlObject(object):
             GL_UNSIGNED_BYTE, text_data
         )
 
-    def draw(self, sensor_data, rotate_around_y_mode):
+    def draw(self, sensor_data, rotate_around_y_mode,
+             text=None, osd_status=None):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
         glTranslatef(0, 0.0, -7.0)
 
-        osd_text = "Y: " + str(
-            "{0:.2f}".format(sensor_data.xl_y_value)
-        ) + ", X: " + str(
-            "{0:.2f}".format(sensor_data.xl_x_value)
-        )
-
-        if rotate_around_y_mode:
-            osd_line = osd_text + ", Z: " + str(
-                "{0:.2f}".format(sensor_data.xl_z_value)
+        if not text:
+            osd_text = "Y: " + str(
+                "{0:.2f}".format(sensor_data.xl_y_value)
+            ) + ", X: " + str(
+                "{0:.2f}".format(sensor_data.xl_x_value)
             )
+            if rotate_around_y_mode:
+                osd_line = osd_text + ", Z: " + str(
+                    "{0:.2f}".format(sensor_data.xl_z_value)
+                )
+            else:
+                osd_line = osd_text
         else:
-            osd_line = osd_text
+            osd_line = text
 
         self._draw_text((-2, -2, 2), osd_line)
+
+        if osd_status:
+            self._draw_text((-3, -3, 2), osd_status)
+        else:
+            self._draw_text((-3, -3, 2), "                       ")
 
         if rotate_around_y_mode:
             glRotatef(sensor_data.xl_z_value, 0.0, 1.0, 0.0)
@@ -97,12 +104,12 @@ class OpenGlObject(object):
 class RenderPyGame(object):
 
     rotate_around_y_mode = 0
-    object_com_port = None
+    count_space = 0
 
-    def __init__(self, object_com_port):
+    def __init__(self):
         self.rotate_around_y_mode = True
-        self.object_com_port = object_com_port
         self.figure = OpenGlObject()
+        self.count_space = 0
 
     def _resize(self, width, height):
         if height == 0:
@@ -120,38 +127,11 @@ class RenderPyGame(object):
         glDepthFunc(GL_LEQUAL)
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 
-    def render(self):
+    def pre_run(self):
         pygame.init()
-        # sensor_data = FakePlotData()
-
-        dat_object = ProxyPlotData(self.object_com_port)
-
         video_flags = pygame.OPENGL | pygame.DOUBLEBUF
         screen = pygame.display.set_mode(
             (settings.WIGHT, settings.HEIGHT), video_flags
         )
-        pygame.display.set_caption("Press Esc to quit, z toggles yaw mode")
+        pygame.display.set_caption("Press Esc to quit")
         self._resize(settings.WIGHT, settings.HEIGHT)
-
-        frames = 0
-        ticks = pygame.time.get_ticks()
-
-        while 1:
-            event = pygame.event.poll()
-            if event.type == QUIT or (
-                event.type == KEYDOWN and event.key == K_ESCAPE
-            ):
-                break
-            if event.type == KEYDOWN and event.key == K_z:
-                self.rotate_around_y_mode = not self.rotate_around_y_mode
-
-            sensor_data = dat_object.run()
-            # sensor_data.set_received_data()
-
-            self.figure.draw(sensor_data, self.rotate_around_y_mode)
-
-            pygame.display.flip()
-            frames += 1
-
-        fps = (frames * 1000) / (pygame.time.get_ticks() - ticks)
-        print "fps:  {fps}".format(fps=fps)

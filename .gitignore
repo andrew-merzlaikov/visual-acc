@@ -12,6 +12,7 @@ __pycache__/
 # Folder config file
 Desktop.ini
 
+result/
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
