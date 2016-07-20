@@ -1,6 +1,5 @@
 import csv
 from datetime import datetime
-from msvcrt import getch
 import math
 from sys import stdout
 
@@ -272,7 +271,7 @@ class CalibrationSensorData(SensorData):
         "xl_y_value",
         "xl_z_value",
     ]
-    
+
     def __init__(self):
         self.mean_dict = {
             "xl_x_value": 0,
@@ -282,7 +281,7 @@ class CalibrationSensorData(SensorData):
         self.iteration = 0
         self.matrix_calibration = list()
         super(CalibrationSensorData, self).__init__()
-        
+
     def get_iteration_data(self, packages):
         self.mean_dict = {
             "xl_x_value": 0,
@@ -294,7 +293,7 @@ class CalibrationSensorData(SensorData):
         for key in self.calibration_data:
             self.mean_dict[key] += getattr(self, key)
             self.iteration += 1
-    
+
     def run_mean_and_push(self):
         for key in self.calibration_data:
             self.mean_dict[key] /= self.iteration
@@ -305,7 +304,7 @@ class CalibrationSensorData(SensorData):
                 self.mean_dict["xl_z_value"]
             ]
         )
-            
+
     def get_dict_calibration_data(self):
         return self.mean_dict
 
