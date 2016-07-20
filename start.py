@@ -4,7 +4,7 @@ from serial import SerialException
 
 from utils.calibration import ProxyCalibrationData
 from utils.reading_serial import ReadComPort, TestReadComPort
-from visual.render import RenderPyGame
+from interfaces.render import RenderPyGame
 
 
 parser = argparse.ArgumentParser()

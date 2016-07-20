@@ -3,8 +3,6 @@
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import pygame
-from pygame.locals import *
-from utils.reading_serial import ProxySensorData, FakeSensorData
 
 import settings
 
@@ -97,12 +95,10 @@ class OpenGlObject(object):
 class RenderPyGame(object):
 
     rotate_around_y_mode = 0
-    object_com_port = None
     count_space = 0
 
-    def __init__(self, object_com_port):
+    def __init__(self):
         self.rotate_around_y_mode = True
-        self.object_com_port = object_com_port
         self.figure = OpenGlObject()
         self.count_space = 0
 
@@ -122,42 +118,11 @@ class RenderPyGame(object):
         glDepthFunc(GL_LEQUAL)
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 
-    def run(self):
+    def pre_run(self):
         pygame.init()
-        # sensor_data = FakeSensorData()
-
-        dat_object = ProxySensorData(self.object_com_port)
-
         video_flags = pygame.OPENGL | pygame.DOUBLEBUF
         screen = pygame.display.set_mode(
             (settings.WIGHT, settings.HEIGHT), video_flags
         )
-        pygame.display.set_caption("Press Esc to quit, z toggles yaw mode")
+        pygame.display.set_caption("Press Esc to quit")
         self._resize(settings.WIGHT, settings.HEIGHT)
-
-        frames = 0
-        ticks = pygame.time.get_ticks()
-
-        while True:
-            event = pygame.event.poll()
-            if event.type == QUIT or (
-                event.type == KEYDOWN and event.key == K_ESCAPE
-            ):
-                break
-            # if event.type == KEYDOWN and event.key == K_z:
-            #     self.rotate_around_y_mode = not self.rotate_around_y_mode
-            if event.type == KEYDOWN and event.key == K_SPACE:
-                self.count_space += 1
-                print "{star} {count_space} {star}".format(
-                    star="*" * 10, count_space=self.count_space
-                )
-
-            sensor_data = dat_object.run(self.count_space)
-
-            self.figure.draw(sensor_data, self.rotate_around_y_mode)
-
-            pygame.display.flip()
-            frames += 1
-
-        fps = (frames * 1000) / (pygame.time.get_ticks() - ticks)
-        print "fps:  {fps}".format(fps=fps)
