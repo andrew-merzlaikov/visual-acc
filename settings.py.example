@@ -1,10 +1,28 @@
+# coding: utf-8
 import os
 
-PORT = "COM5"
+PORT = "/dev/ttyACM0"
 BAUDRATE = 115200
+
 WIGHT = 680
 HEIGHT = 480
 
-
 PROJECT_PATH = os.path.dirname(__file__)
 RESULT_DIR = PROJECT_PATH + "/result/"
+
+
+# Настройки пакетов
+
+ARDUINO_PACKAGE_STRING_SEPARATOR = ";"
+ARDUINO_COUNT_SEND_ELEMENT = 8
+ARDUINO_SCALE_ACC_GYRO = 0.1 ** 6
+
+# Настройка физических констант
+
+SCALE_USEC = 0.1 ** 6
+GRAVITY = 0.97
+
+
+# Настройки калибровки
+
+COUNT_ITERATION = 500
