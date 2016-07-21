@@ -6,7 +6,7 @@ import pygame
 
 import settings
 
-# TODO: Нужно переделать архитектуру интерфейсов тут насрано
+# TODO: Нужно переделать архитектуру интерфейсов
 
 class OpenGlObject(object):
 
