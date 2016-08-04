@@ -1,5 +1,4 @@
-# visual-acc
+# Project for visualisation data in Acc\Gyro\Mag\Barometr
+Python code for visualisation use OpenGl.
+Controller Arduino send data by serial port.
 
-Пакет для работы с Arduino.
-
-Для получения данных с акселерометра, гироскопа и барометра
